@@ -1,0 +1,299 @@
+---
+title: "291 HW2"
+author: "Vidushi Kataria"
+output: html_document
+date: "2024-02-07"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r packages, echo=FALSE}
+Worldlife100 <- read.csv("Worldlife.csv")
+install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+```
+
+## PART 1: Regression of life expectancy in 2023 on life expectancy in 1923
+```{r Question 1, echo=FALSE}
+ggplot(Worldlife100, aes(x = life1923)) +
+  geom_histogram(bins=20, color="black", fill="lightblue") + 
+  labs(title="Life Expectancy in 1923",
+       x="Life Expectancy (years)",
+       y="Number of Countries")
+```
+The distribution has a single peak that is right-skewed.
+```{r Question 1, echo=false}
+ggplot(Worldlife100, aes(x = life2023)) + 
+   geom_histogram(bins=20, color="black", fill="lightblue") +
+   labs(title = "Life Expectancy in 2023", 
+        x = "Life Expectancy (years)",
+        y = "Number of Countries")
+```
+ There are two clear peaks in the histogram, indicating two predominant modes/clusters in the data. Most of the values on the right side have a higher trajectory, meaning that this histogram is left-skewed.
+
+## Q2
+```{r Question 2, echo=FALSE}
+ggplot(Worldlife100, aes(x = life1923, y = life2023)) +
+  geom_point(color="blue") +
+  geom_smooth(method="lm", se=FALSE) +
+  labs(title="Life Expectancy in 2023 vs 1923", 
+       x="Life Expectancy in 1923 (years)",
+       y="Life Expectancy in 2023 (years)")
+```
+There is a positive linear relationship between life expectancy in 1923 and life expectancy in 2023. Countries with higher life expectancy in 1923 also tended to have higher life expectancy in 2023.
+
+## Q3
+```{r Question 3, echo=FALSE}
+cor(Worldlife100$life1923, Worldlife100$life2023)
+```
+Positive correlation: 0.49
+The coefficient of determination R2:0.49^2 = 0.2401
+Approximately 24% of the variance in Y can be explained by the linear relationship between X and Y.
+
+## Q4
+```{r Question 4, echo=FALSE}
+fit <- lm(life2023 ~ life1923, data=Worldlife100)
+summary(fit)
+```
+The model is highly significant with p-value < 0.001. 
+
+## Q5
+```{r Question 5, echo=FALSE}
+coef(fit) [2]
+```
+If life expectancy in 1923 increases by 1 year, the expected increase in life expectancy in 2023 is 0.38 years.
+
+## Q6
+```{r Question 6, echo=FALSE}
+new.worldlife <- data.frame(life1923 = 34.3)
+pred <- 34.3*coef(fit) [2] + coef(fit) [1]
+print(pred)
+```
+The predicted life expectancy in 2023 for a country with 34.3 years life expectancy in 1923 is 72.38 years.
+
+## Q7
+```{r Question 7, echo=FALSE}
+ggplot(data = fit, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0) +
+  ggtitle("Residuals vs. Fitted Values")
+```
+
+```{r Question 7, echo=FALSE}
+ggplot(fit) +
+  geom_histogram(aes(x = .resid), bins = 20) +
+  ggtitle("Histogram of Residuals")
+```
+The residual plot does not show any pattern and residuals are randomly scattered around 0. The histogram of residuals also shows an approximate normal distribution. This suggests the residuals are random as expected in a linear model.
+
+## Q8
+```{r Question 8, echo=FALSE}
+summary(fit)$r.squared
+```
+The R-squared is 0.2429, suggesting that 24.3% of the variability in life expectancy in 2023 can be explained by the linear model using life expectancy in 1923.
+
+################################################################################
+
+## PART 2: Regression of life expectancy on continent
+
+## Q1
+```{r Question 1, echo=FALSE}
+table(Worldlife100$continent)
+```
+Africa: 54
+Americas: 33
+Asia: 50
+Europe: 39
+Oceania: 10
+
+## Q2
+```{r Question 2, echo=FALSE}
+boxplot(life1923 ~ continent, data = Worldlife100)
+```
+In 1923, Europe had the highest median life expectancy followed by Oceania and Americas. Asia and Africa had much lower life expectancy. There were some countries in Asia and Africa with very low life expectancy below 20 years.
+
+## Q3
+```{r Question 3, echo=FALSE}
+hist(subset(Worldlife100,continent=="Africa")$life1923)
+hist(subset(Worldlife100,continent=="Americas")$life1923) 
+hist(subset(Worldlife100,continent=="Asia")$life1923)
+hist(subset(Worldlife100,continent=="Europe")$life1923)
+hist(subset(Worldlife100,continent=="Oceania")$life1923)
+```
+Europe and Oceania have distributions centered around 60 years. Americas is centered slightly lower around 50 years. Asia and Africa have wider distributions with lower average life expectancy.
+
+## Q4 - Summary Table
+```{r Question 4, echo=FALSE}
+Worldlife100 |>
+  group_by(continent) |>
+  summarise(
+    NumCountries = n(),
+    Mean_life1923 = mean(life1923, na.rm = TRUE),
+    Median_life1923 = median(life1923, na.rm = TRUE)
+  )
+```
+
+## Q5 
+```{r Question 5, echo=FALSE}
+fit_continent <- lm(life1923 ~ continent, data = Worldlife100)
+summary(fit_continent)
+```
+The estimated average life expectancy is:
+Africa: 34.90 years
+Americas: 35.94 years
+Asia: 33.79 years
+Europe: 48.43 years
+Oceania: 35.06 years
+
+All continents except Americas and Oceania are significantly different from the reference level Europe (p-value < 0.05). The estimates for Americas and Oceania are statistically insignificant compared to Europe based on their high p-values of 0.501 and 0.948 respectively.
+
+## Q6
+```{r Question 6, echo=FALSE}
+fit_continent2 <- lm(life1923 ~ continent, data = Worldlife100)
+summary(fit_continent2)
+```
+Africa: Intercept at 34.90 years 
+Americas: Coefficient is 1.04 years higher than Africa. So estimated LE is 34.90 + 1.04 = 35.94 years
+Asia: Coefficient is -1.11 years compared to Africa
+So estimated LE is 34.90 - 1.11 = 33.79 years
+Europe: Coefficient is 13.53 years higher than Africa So estimated LE is 34.90 + 13.53 = 48.43 years
+Oceania: Coefficient is 0.16 higher than Africa Estimated LE is 34.90 + 0.16 = 35.06 years
+
+## Q7 - Regroup continents
+```{r Question 7, echo=FALSE}
+Worldlife100 <- Worldlife100 |>
+  mutate(new_cont = case_when(
+    continent == "Asia" ~ "Asia",
+    continent %in% c("Europe", "North America") ~ "Europe and North America",
+    continent %in% c("Africa", "South America") ~ "Africa and South America",
+    TRUE ~ "Others"
+  ))
+```
+
+## Q8
+```{r Question 8, echo=FALSE}
+model <- lm(life1923 ~ new_cont, data = Worldlife100)
+summary(model)
+
+# calculating residuals
+residuals <- residuals(model)
+
+# histogram of residuals
+ggplot(data.frame(Residuals = residuals), aes(x = Residuals)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", aes(y = ..density..)) +
+  geom_density(alpha = 0.2, fill = "orange") +
+  labs(title = "Histogram of Residuals",
+       x = "Residuals",
+       y = "Density")
+
+# calculate % of total variability in life expectancy in 1923
+total_variability_1923 <- sum((Worldlife100$life1923 - mean(Worldlife100$life1923))^2)
+
+explained_variability_1923 <- sum((fitted(model) - mean(Worldlife100$life1923))^2)
+
+percentage_explained_1923 <- (explained_variability_1923 / total_variability_1923) * 100
+percentage_explained_1923
+```
+The percentage of the total variability in life expectancy in 1923 using the new continent indicator is 40.05%. 
+
+```{r Question 9, echo = FALSE}
+# Re-do steps 2-8 for life2023
+# boxplot 
+ggplot(Worldlife100, aes(x = continent, y = life2023)) +
+  geom_boxplot(fill = "skyblue") +
+  labs(title = "Life Expectancy in 2023 by Continent",
+       x = "Continent",
+       y = "Life Expectancy")
+```
+
+```{r Question 9, echo = FALSE}
+# histogram of life 2023 by continent
+ggplot(Worldlife100, aes(x = life2023, fill = continent)) +
+  geom_histogram(binwidth = 2, position = "dodge", color = "black") +
+  labs(title = "Histogram of Life Expectancy in 2023 by Continent",
+       x = "Life Expectancy",
+       y = "Frequency",
+       fill = "Continent")
+```
+
+```{r Question 9, echo = FALSE}
+# table summarizing mean and median
+summary_table_2023 <- Worldlife100 |>
+  group_by(continent) |>
+  summarize(mean_LE_2023 = mean(life2023),
+            median_LE_2023 = median(life2023))
+summary_table_2023
+```
+
+```{r Question 9, echo = FALSE}
+#  Fit a regression model using default reference level
+model_2023 <- lm(life1923 ~ continent, data = Worldlife100)
+summary(model_2023)
+```
+```{r Question 9, echo = FALSE}
+# Rerun the regression by using different reference levels
+fit_continent3 <- lm(life2023 ~ continent, data = Worldlife100)
+summary(fit_continent3)
+```
+```{r Question 9, echo = FALSE}
+# Regroup 5 levels in continent and running the model
+Worldlife100 <- Worldlife100 |>
+  mutate(new_continent = case_when(
+    continent == "Asia" ~ "Asia",
+    continent %in% c("Europe", "North America") ~ "Europe and North America",
+    continent %in% c("Africa", "South America") ~ "Africa and South America",
+    TRUE ~ "Others"
+  ))
+model_new_continent_2023 <- lm(life2023 ~ new_continent, data = Worldlife100)
+summary(model_new_continent_2023)
+```
+```{r Question 9, echo = FALSE}
+residuals_2023 <- residuals(model_new_continent_2023)
+
+# histogram of residuals
+ggplot(data.frame(Residuals = residuals_2023), aes(x = Residuals)) +
+  geom_histogram(binwidth = 2, fill = "skyblue", color = "black", aes(y = ..density..)) +
+  geom_density(alpha = 0.2, fill = "orange") +
+  labs(title = "Histogram of Residuals (2023)",
+       x = "Residuals",
+       y = "Density")
+```
+```{r Question 9, echo = FALSE}
+# calculating % of total variability explained by the model for 2023
+total_variability_2023 <- sum((Worldlife100$life2023 - mean(Worldlife100$life2023))^2)
+explained_variability_2023 <- sum((fitted(model_new_continent_2023) - mean(Worldlife100$life2023))^2)
+percentage_explained_2023 <- (explained_variability_2023 / total_variability_2023) * 100
+percentage_explained_2023
+# result = 48.61778% 
+```
+# Q10 - Describe whether you see any different patterns happened in these 100 years
+Changes in Life Expectancy by Continent:  
+Generally, life expectancy increases as the years increase. By continent, Europe continues to have the highest life expectancy, with Americas and Asia increasing at a proportionately higher rate by 2023. Africa and Oceania have had a positive increase in life expectancy, but still remain the lowest comparative to the other continents. 
+
+When reviewing the differences in distribution, the 1923 histograms were skewed to the right, while the 2023 histograms were skewed left. This shows an increase in life expectancy over time as the clusters shift along the x-axis.
+
+Mean and Median Life Expectancy by Continent:
+```{r Question 10, echo = FALSE}
+means <- tapply(Worldlife100$life1923, Worldlife100$continent, mean)
+medians <- tapply(Worldlife100$life1923, Worldlife100$continent, median)
+summary_table_1923 <- data.frame(Continent = names(means),
+                                 Mean_LE_1923 = means,
+                                 Median_LE_1923 = medians)
+summary_table_1923
+
+means_2023 <- tapply(Worldlife100$life2023, Worldlife100$continent, mean)
+medians_2023 <- tapply(Worldlife100$life2023, Worldlife100$continent, median)
+summary_table_2023 <- data.frame(Continent = names(means),
+                                 Mean_Le_2023 = means,
+                                 Median_LE_2023 = medians)
+```
+
+
+
+
+
+
+
