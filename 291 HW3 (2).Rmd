@@ -1,0 +1,143 @@
+---
+title: "HW 3"
+author: "Vidushi Kataria"
+output: html_document
+
+date: "2024-02-12"
+---
+```{r library, include=FALSE}
+Worldlife100 <- read.csv("Worldlife.csv")
+library(ggplot2)
+library(dplyr)
+```
+-------------------------------------------------------------
+## Worldlife Data
+-------------------------------------------------------------
+# Revisit regression model of Worldlife data
+```{r info, include=FALSE}
+model_2023 <- lm(life1923 ~ continent, data = Worldlife100)
+fit_continent3 <- lm(life2023 ~ continent, data = Worldlife100)
+```
+
+# QQ Plot of Residuals
+```{r qq, echo=FALSE}
+qqnorm(resid(fit_continent3))
+ggplot(fit_continent3) +
+  geom_qq(aes(sample=.resid)) +
+  geom_abline() +
+  ggtitle("QQ Plot")
+```
+```{r hist, echo=FALSE}
+ggplot(fit_continent3) +
+  geom_histogram(aes(x = .resid), bins = 20) +
+  ggtitle("Histogram of Residuals")
+```
+```{r resid, echo=FALSE}
+residuals <- residuals(fit_continent3)
+ggplot(Worldlife100, aes(life1923, life2023)) +
+  geom_point(aes(y = residuals), color = "blue") +
+  geom_hline(yintercept = 0) +
+  ggtitle("Residuals vs. Fit")
+
+```
+## Linear Model Assumptions (LINE property)
+#Linear Pattern between X and Y
+There are no trends or curves in the residual vs. predictor scatter plot. The residuals look like they are spread out randomly around 0 along the x-axis. This indicates a line relationship, so the assumption of linearity is met.
+
+#Independence
+The observations demonstrate how long people in different countries have lived over time. We can properly assume that the residual terms are not affected by the country where they are used. This lowers the chance of correlations. So, the idea of independence is true.
+
+#Normality 
+The residuals' histogram shows a distribution that is close to normal. It has only one peak (unimodal) and is symmetric around 0. It does not appear to consist of any big, noticeable differences. This means that the assumption that residuals are normal is true.
+
+#Equal Variance
+The residual vs fit plot shows a random scatter with constant variance across the range of x-axis values. The spread does not increase or decrease across the life expectancy in 1923 values. Therefore, the assumption of homoscedasticity (constant variance of residuals) is true. 
+
+-------------------------------------------------------------
+## Galton's Height Data
+-------------------------------------------------------------
+```{r setup2, include=FALSE}
+galton <- read.csv("galton_height.csv")
+galton_peas <- read.csv("galton_peas.csv")
+```
+## PART 1: Regression of child’s height (gender adjusted) on mid-height of parent
+# Analysis
+```{r part1, echo=FALSE}
+galton$midparent.height <- NA
+galton$midparent.height <- with(galton, (Father + Mother)/2)
+mean(galton$Height)
+mean(galton$midparent.height) 
+fit <- lm(Height ~ midparent.height, data = galton)
+summary(fit) #Model is significant 
+coef(fit)[2] 
+predict(fit, newdata=data.frame(midparent.height=c(64, 68, 70, 72, 76)))
+mean(galton$Height)
+```
+Q2: Average children height: 66.761 inches; Average mid-parent height: 66.659 inches
+Q3: Average height of children when mid-parent height between 72 and 73 inches: 70.748 inches
+Q4: Yes, the regression model is statistically significant (p < 2e-16)
+Q5: If mid-parent height increases by 1 inch, expected increase in child's height is 0.669 inches (the regression coefficient). This is smaller than 1 inch.
+Q6: Expected child heights:
+- Mid-parent height 64: Predicted child height = 64.981 inches 
+- Mid-parent height 68: Predicted child height = 67.658 inches 
+- Mid-parent height 70: Predicted child height = 68.997 inches 
+- Mid-parent height 72: Predicted child height = 70.335 inches 
+- Mid-parent height 76: Predicted child height = 73.012 inches 
+
+
+```{r scatter1, echo=FALSE}
+ggplot(galton, aes(x=midparent.height, y=Height)) +
+  geom_point()+
+  geom_abline(slope =  0.51, intercept = 32.1, color="red") +
+  geom_abline(slope = 1, intercept = 0, color="blue")
+```
+--------------------------------------------------------------------------------
+## PART 2: Regression of mid-height of parent on child’s height (gender adjusted)
+# Scatterplot with regression line 
+```{r graph, echo=FALSE}
+ggplot(galton, aes(x=Height, y=midparent.height)) +
+  geom_point() +
+  geom_abline(slope = 0.692, intercept = 38.27, color = "red") +
+  geom_abline(slope = 1, intercept = 0, color = "blue")
+```
+# Analysis 
+```{r analysis2, echo=FALSE}
+galton$midparent.height <- (galton$Father + galton$Mother) / 2
+#Mean mid-parent height if child height "72-73" 
+mean(subset(galton, Height>=72 & Height<73)$midparent.height)
+
+#Regression
+fit <- lm(midparent.height ~ Height, data=galton)
+summary(fit) #Model is significant
+
+#Increase in mid-parent height per inch increase in child's height
+coef(fit)[2] # 0.1598, smaller than 1
+
+#Predict mid-parent heights
+newdata <- data.frame(Height=c(64, 68, 70, 72, 76))
+predict(fit, newdata)
+```
+Q2: Mean mid-parent height if child's height between 72 and 73 inches: 67.274 inches
+Q3: Yes, the regression model is statistically significant (p < 2e-16)
+Q4: If child's height increases by 1 inch, expected increase in mid-parent height is ~0.160 inches. This is smaller than 1 inch.
+Q5: Estimated mid-parent heights:
+- Child's height 64: Predicted mid-parent height = 66.217 inches
+- Child's height 68: Predicted mid-parent height = 66.857 inches
+- Child's height 70: Predicted mid-parent height = 67.176 inches
+- Child's height 72: Predicted mid-parent height = 67.496 inches
+- Child's height 76: Predicted mid-parent height = 68.135 inches
+```{r echo=FALSE}
+#Compare to mean
+mean(galton$midparent.height)
+```
+```
+## FINAL QUESTION: Use the above results to explain regression to the mean
+In the first regression, I found that:
+- The regression coefficient was 0.669 meaning if parent height increases by 1 inch, expected increase in child height is only 0.669 inches.
+- Child heights regressed towards the population average of 66.761 inches even for very tall or very short parents
+
+In the second regression, I found that:
+- The regression coefficient was 0.160 meaning if child height increases by 1 inch, expected increase in mid-parent height is only 0.160 inches
+- Mid-parent heights regressed towards the population average of 66.659 inches even for very tall or very short children
+
+These regressions show that extreme traits in parents do not fully pass on to children. The trait values in children tend to move back or "regress" towards the population average - this is called regression to the mean. Therefore, subsequent generations regress back towards the statistically more likely average value.
